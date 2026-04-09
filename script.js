@@ -84,13 +84,10 @@ function handleYesClick() {
         return
     }
 
-    // ── Send response to Google Sheet before redirecting ──
-    sendResponse('Yes')
-
-    // Give enough time for the fetch to fire before navigating away
-    setTimeout(() => {
+    // ── Send response to Google Sheet, then redirect ──
+    sendResponse('Yes').finally(() => {
         window.location.href = 'yes.html'
-    }, 1000)
+    })
 }
 
 function showTeaseMessage(msg) {
@@ -219,11 +216,24 @@ function sendResponse(finalAnswer) {
         referrer:      document.referrer || 'Direct'
     })
 
-    // Use Image pixel trick — bulletproof, no CORS issues at all
-    // Google Apps Script handles it via doGet()
-    const tracker = new Image()
-    tracker.src = `${GOOGLE_SHEET_URL}?${params.toString()}`
+    // Return a promise that resolves when fetch succeeds, fails, or times out after 1.5s
+    return new Promise(resolve => {
+        const timeout = setTimeout(resolve, 1500); // 1.5s timeout safety
+        
+        fetch(`${GOOGLE_SHEET_URL}?${params.toString()}`, {
+            method: 'GET',
+            mode: 'no-cors'
+        }).then(() => {
+            console.log('✅ Response sent successfully!')
+            clearTimeout(timeout);
+            resolve();
+        }).catch(err => {
+            console.error('❌ Failed to send response:', err)
+            clearTimeout(timeout);
+            resolve();
+        })
 
-    console.log('📊 Response sent:', Object.fromEntries(params))
+        console.log('📊 Sending response:', Object.fromEntries(params))
+    });
 }
 
