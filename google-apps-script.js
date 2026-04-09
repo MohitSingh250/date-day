@@ -20,46 +20,49 @@
 // Handle GET requests — saves visitor data to the sheet
 function doGet(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var p = e.parameter;
-
-    // Only save if there's actual data (not just a health check)
-    if (p.finalAnswer) {
-      sheet.appendRow([
-        p.timestamp       || new Date().toLocaleString(),
-        p.finalAnswer     || '',
-        p.noClickCount    || 0,
-        p.yesTeaseCount   || 0,
-        p.timeOnPage      || 0,
-        p.device          || '',
-        p.browser         || '',
-        p.screenSize      || '',
-        p.referrer        || ''
-      ]);
-
+    // Safety check — e may be undefined if run manually from editor
+    if (!e || !e.parameter || !e.parameter.finalAnswer) {
       return ContentService
-        .createTextOutput(JSON.stringify({ status: 'success', message: 'Data saved!' }))
+        .createTextOutput(JSON.stringify({ status: 'ok', message: 'Date Day tracker is running! 💕 (No data to save)' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Health check (no data params)
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var p = e.parameter;
+
+    sheet.appendRow([
+      p.timestamp       || new Date().toLocaleString(),
+      p.finalAnswer     || '',
+      p.noClickCount    || 0,
+      p.yesTeaseCount   || 0,
+      p.timeOnPage      || 0,
+      p.device          || '',
+      p.browser         || '',
+      p.screenSize      || '',
+      p.referrer        || ''
+    ]);
+
     return ContentService
-      .createTextOutput(JSON.stringify({ status: 'ok', message: 'Date Day tracker is running! 💕' }))
+      .createTextOutput(JSON.stringify({ status: 'success', message: 'Data saved!' }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
     Logger.log('Error: ' + error.toString());
-    Logger.log('Parameters: ' + JSON.stringify(e.parameter));
-
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'error', message: error.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-// Handle POST requests (backup — in case POST is used)
+// Handle POST requests (backup)
 function doPost(e) {
   try {
+    if (!e || !e.postData) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'error', message: 'No post data received' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var data = JSON.parse(e.postData.contents);
 
