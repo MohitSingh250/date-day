@@ -223,24 +223,36 @@ function sendResponse(finalAnswer) {
         referrer:      document.referrer || 'Direct'
     })
 
-    // Return a promise that resolves when fetch succeeds, fails, or times out after 3.5s
+    // Return a promise that resolves when the Google Apps Script calls us back (JSONP)
+    // or times out after 3.5s
     return new Promise(resolve => {
         const timeout = setTimeout(resolve, 3500); // 3.5s timeout safety
-        
-        fetch(`${GOOGLE_SHEET_URL}?${params.toString()}`, {
-            method: 'GET',
-            mode: 'no-cors'
-        }).then(() => {
-            console.log('✅ Response sent successfully!')
-            clearTimeout(timeout);
-            resolve();
-        }).catch(err => {
-            console.error('❌ Failed to send response:', err)
-            clearTimeout(timeout);
-            resolve();
-        })
 
-        console.log('📊 Sending response:', Object.fromEntries(params))
+        // Create a unique callback function for JSONP
+        const callbackName = 'jsonp_callback_' + Math.round(Math.random() * 100000);
+        
+        window[callbackName] = function(response) {
+            console.log('✅ Response sent successfully!', response);
+            clearTimeout(timeout);
+            delete window[callbackName];
+            resolve();
+        };
+
+        params.append('callback', callbackName);
+
+        // JSONP completely bypasses CORS & iOS Safari strict tracking protection
+        const script = document.createElement('script');
+        script.src = `${GOOGLE_SHEET_URL}?${params.toString()}`;
+        
+        script.onerror = function(err) {
+            console.error('❌ Failed to send response (JSONP error):', err);
+            clearTimeout(timeout);
+            delete window[callbackName];
+            resolve();
+        };
+
+        document.body.appendChild(script);
+        console.log('📊 Sending response (JSONP):', Object.fromEntries(params));
     });
 }
 

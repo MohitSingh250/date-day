@@ -42,15 +42,36 @@ function doGet(e) {
       p.referrer        || ''
     ]);
 
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'success', message: 'Data saved!' }))
-      .setMimeType(ContentService.MimeType.JSON);
+    // Determine if it's a JSONP request
+    var callback = e.parameter.callback;
+    var resultObj = { status: 'success', message: 'Data saved!' };
+    
+    if (callback) {
+      // JSONP response
+      return ContentService
+        .createTextOutput(callback + '(' + JSON.stringify(resultObj) + ');')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    } else {
+      // Standard JSON response
+      return ContentService
+        .createTextOutput(JSON.stringify(resultObj))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
   } catch (error) {
     Logger.log('Error: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'error', message: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    var callback = e ? (e.parameter ? e.parameter.callback : null) : null;
+    var errObj = { status: 'error', message: error.toString() };
+    
+    if (callback) {
+      return ContentService
+        .createTextOutput(callback + '(' + JSON.stringify(errObj) + ');')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    } else {
+      return ContentService
+        .createTextOutput(JSON.stringify(errObj))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
   }
 }
 
