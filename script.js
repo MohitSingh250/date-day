@@ -1,3 +1,9 @@
+// ============================================================
+//  🔗 PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BELOW
+// ============================================================
+const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxaeMAwxWKXmYN0bnjnCGGRyd400aDKQ7IDzEpywVkyWUWm7GBSzRJC87aMEorVX-wdpg/exec'
+// ============================================================
+
 const gifStages = [
     "https://media.tenor.com/EBV7OT7ACfwAAAAj/u-u-qua-qua-u-quaa.gif",    // 0 normal
     "https://media1.tenor.com/m/uDugCXK4vI4AAAAd/chiikawa-hachiware.gif",  // 1 confused
@@ -33,6 +39,10 @@ let yesTeasedCount = 0
 let noClickCount = 0
 let runawayEnabled = false
 let musicPlaying = true
+
+// ── Tracking ────────────────────────────────────────────────
+const sessionStartTime = Date.now()
+let responseSent = false   // prevent duplicate submissions
 
 const catGif = document.getElementById('cat-gif')
 const yesBtn = document.getElementById('yes-btn')
@@ -73,7 +83,14 @@ function handleYesClick() {
         showTeaseMessage(msg)
         return
     }
-    window.location.href = 'yes.html'
+
+    // ── Send response to Google Sheet before redirecting ──
+    sendResponse('Yes')
+
+    // Small delay so the request fires before navigation
+    setTimeout(() => {
+        window.location.href = 'yes.html'
+    }, 400)
 }
 
 function showTeaseMessage(msg) {
@@ -142,4 +159,79 @@ function runAway() {
     noBtn.style.left = `${randomX}px`
     noBtn.style.top = `${randomY}px`
     noBtn.style.zIndex = '50'
+}
+
+// ============================================================
+//  📊 Response Tracking — Google Sheets
+// ============================================================
+
+function getDeviceInfo() {
+    const ua = navigator.userAgent
+
+    // ── Device type ──
+    let device = 'Unknown'
+    if (/iPhone/i.test(ua))           device = 'iPhone'
+    else if (/iPad/i.test(ua))        device = 'iPad'
+    else if (/Android.*Mobile/i.test(ua)) device = 'Android Phone'
+    else if (/Android/i.test(ua))     device = 'Android Tablet'
+    else if (/Macintosh/i.test(ua))   device = 'Mac'
+    else if (/Windows/i.test(ua))     device = 'Windows PC'
+    else if (/Linux/i.test(ua))       device = 'Linux PC'
+
+    // ── Browser name ──
+    let browser = 'Unknown'
+    if (/Edg\//i.test(ua))            browser = 'Edge'
+    else if (/OPR|Opera/i.test(ua))   browser = 'Opera'
+    else if (/Chrome/i.test(ua))      browser = 'Chrome'
+    else if (/Safari/i.test(ua))      browser = 'Safari'
+    else if (/Firefox/i.test(ua))     browser = 'Firefox'
+
+    // ── Screen size ──
+    const screenSize = `${screen.width}x${screen.height}`
+
+    return { device, browser, screenSize }
+}
+
+function sendResponse(finalAnswer) {
+    // Prevent duplicate sends
+    if (responseSent) return
+    responseSent = true
+
+    // Don't send if URL hasn't been set yet
+    if (GOOGLE_SHEET_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+        console.warn('⚠️ Google Sheet URL not set! Open script.js and paste your URL.')
+        return
+    }
+
+    const { device, browser, screenSize } = getDeviceInfo()
+    const timeOnPage = Math.round((Date.now() - sessionStartTime) / 1000)
+
+    const payload = {
+        timestamp:     new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+        finalAnswer:   finalAnswer,
+        noClickCount:  noClickCount,
+        yesTeaseCount: yesTeasedCount,
+        timeOnPage:    `${timeOnPage} sec`,
+        device:        device,
+        browser:       browser,
+        screenSize:    screenSize,
+        referrer:      document.referrer || 'Direct'
+    }
+
+    // Use sendBeacon for reliability (fires even during page navigation)
+    // Fall back to fetch if sendBeacon is unavailable
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' })
+
+    if (navigator.sendBeacon) {
+        navigator.sendBeacon(GOOGLE_SHEET_URL, blob)
+    } else {
+        fetch(GOOGLE_SHEET_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(() => {})
+    }
+
+    console.log('📊 Response sent:', payload)
 }
