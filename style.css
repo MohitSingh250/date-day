@@ -204,3 +204,157 @@ h1 {
     width: 260px;
     height: 260px;
 }
+
+/* ============================================================
+   📱 Mobile Responsiveness
+   ============================================================ */
+
+/* Tablets and smaller (≤ 768px) */
+@media (max-width: 768px) {
+    body {
+        overflow-y: auto;
+        padding: 20px 0;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        padding: 0 16px;
+        margin-bottom: 16px;
+    }
+
+    .container {
+        padding: 30px 16px;
+    }
+
+    #cat-gif {
+        width: 160px;
+        height: 160px;
+    }
+
+    #yes-btn {
+        font-size: 1.3rem;
+        padding: 14px 36px;
+    }
+
+    #no-btn {
+        font-size: 0.9rem;
+        padding: 10px 24px;
+    }
+
+    .buttons {
+        gap: 14px;
+    }
+
+    .yes-container h1.yes-title {
+        font-size: 2.2rem;
+    }
+
+    .yes-message {
+        font-size: 1.2rem;
+        padding: 0 16px;
+    }
+
+    .yes-container #cat-gif {
+        width: 200px;
+        height: 200px;
+    }
+}
+
+/* Phones (≤ 480px) */
+@media (max-width: 480px) {
+    body {
+        align-items: flex-start;
+        padding-top: 40px;
+        padding-bottom: 80px;
+    }
+
+    h1 {
+        font-size: 1.4rem;
+        line-height: 1.4;
+        padding: 0 12px;
+    }
+
+    .container {
+        padding: 20px 12px;
+        max-width: 100vw;
+    }
+
+    #cat-gif {
+        width: 140px;
+        height: 140px;
+    }
+
+    .buttons {
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+    }
+
+    #yes-btn {
+        font-size: 1.1rem;
+        padding: 12px 30px;
+        width: 80%;
+        max-width: 280px;
+    }
+
+    #no-btn {
+        font-size: 0.85rem;
+        padding: 10px 20px;
+    }
+
+    #tease-toast {
+        font-size: 0.85rem;
+        padding: 0 10px;
+    }
+
+    #music-toggle {
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+        bottom: 14px;
+        right: 14px;
+    }
+
+    .yes-container h1.yes-title {
+        font-size: 1.6rem;
+    }
+
+    .yes-message {
+        font-size: 1rem;
+        padding: 0 12px;
+    }
+
+    .yes-container #cat-gif {
+        width: 160px;
+        height: 160px;
+    }
+}
+
+/* Very small phones (≤ 360px) */
+@media (max-width: 360px) {
+    h1 {
+        font-size: 1.2rem;
+    }
+
+    #cat-gif {
+        width: 120px;
+        height: 120px;
+    }
+
+    #yes-btn {
+        font-size: 1rem;
+        padding: 10px 24px;
+    }
+
+    .yes-container h1.yes-title {
+        font-size: 1.4rem;
+    }
+}
+
+/* Safe area for phones with notches */
+@supports (padding: env(safe-area-inset-bottom)) {
+    #music-toggle {
+        bottom: calc(14px + env(safe-area-inset-bottom));
+    }
+}
+

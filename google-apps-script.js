@@ -11,19 +11,58 @@
  *       • Who has access: Anyone
  *  5. Authorize & copy the Web App URL
  *  6. Paste that URL into script.js as GOOGLE_SHEET_URL
+ *
+ *  TO UPDATE: Deploy → Manage deployments → Edit (pencil) →
+ *             Version: New version → Deploy
  * ============================================================
  */
 
-// Handle POST requests from the website
+// Handle GET requests — saves visitor data to the sheet
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var p = e.parameter;
+
+    // Only save if there's actual data (not just a health check)
+    if (p.finalAnswer) {
+      sheet.appendRow([
+        p.timestamp       || new Date().toLocaleString(),
+        p.finalAnswer     || '',
+        p.noClickCount    || 0,
+        p.yesTeaseCount   || 0,
+        p.timeOnPage      || 0,
+        p.device          || '',
+        p.browser         || '',
+        p.screenSize      || '',
+        p.referrer        || ''
+      ]);
+
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'success', message: 'Data saved!' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Health check (no data params)
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok', message: 'Date Day tracker is running! 💕' }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    Logger.log('Error: ' + error.toString());
+    Logger.log('Parameters: ' + JSON.stringify(e.parameter));
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// Handle POST requests (backup — in case POST is used)
 function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    
-    // Parse JSON from postData (works with both text/plain and application/json)
-    var rawData = e.postData.contents;
-    var data = JSON.parse(rawData);
+    var data = JSON.parse(e.postData.contents);
 
-    // Append a new row with all tracked data
     sheet.appendRow([
       data.timestamp       || new Date().toLocaleString(),
       data.finalAnswer     || '',
@@ -36,26 +75,14 @@ function doPost(e) {
       data.referrer        || ''
     ]);
 
-    // Return success response
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'success' }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
-    // Log the error for debugging (viewable in Apps Script > Executions)
     Logger.log('Error: ' + error.toString());
-    Logger.log('PostData: ' + JSON.stringify(e.postData));
-    
-    // Return error response
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'error', message: error.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
-}
-
-// Handle GET requests (for testing — visit the URL in browser to check)
-function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'ok', message: 'Date Day tracker is running! 💕' }))
-    .setMimeType(ContentService.MimeType.JSON);
 }

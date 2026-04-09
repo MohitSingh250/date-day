@@ -152,8 +152,9 @@ function runAway() {
     const maxX = window.innerWidth - btnW - margin
     const maxY = window.innerHeight - btnH - margin
 
-    const randomX = Math.random() * maxX + margin / 2
-    const randomY = Math.random() * maxY + margin / 2
+    // Clamp to keep button visible on all screen sizes
+    const randomX = Math.max(margin, Math.random() * maxX)
+    const randomY = Math.max(margin, Math.min(Math.random() * maxY, maxY))
 
     noBtn.style.position = 'fixed'
     noBtn.style.left = `${randomX}px`
@@ -206,7 +207,7 @@ function sendResponse(finalAnswer) {
     const { device, browser, screenSize } = getDeviceInfo()
     const timeOnPage = Math.round((Date.now() - sessionStartTime) / 1000)
 
-    const payload = {
+    const params = new URLSearchParams({
         timestamp:     new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
         finalAnswer:   finalAnswer,
         noClickCount:  noClickCount,
@@ -216,21 +217,13 @@ function sendResponse(finalAnswer) {
         browser:       browser,
         screenSize:    screenSize,
         referrer:      document.referrer || 'Direct'
-    }
-
-    // Use text/plain to avoid CORS preflight (Google Apps Script can't handle OPTIONS)
-    // fetch with redirect:'follow' so the 302 from Google is followed properly
-    fetch(GOOGLE_SHEET_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-    }).then(() => {
-        console.log('✅ Response sent successfully!')
-    }).catch((err) => {
-        console.error('❌ Failed to send response:', err)
     })
 
-    console.log('📊 Sending response:', payload)
+    // Use Image pixel trick — bulletproof, no CORS issues at all
+    // Google Apps Script handles it via doGet()
+    const tracker = new Image()
+    tracker.src = `${GOOGLE_SHEET_URL}?${params.toString()}`
+
+    console.log('📊 Response sent:', Object.fromEntries(params))
 }
+
