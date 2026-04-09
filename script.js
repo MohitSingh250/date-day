@@ -84,17 +84,15 @@ function handleYesClick() {
         return
     }
 
-    // Change button text so user knows it's thinking
-    const originalText = yesBtn.textContent
+    // Change button text briefly
     yesBtn.textContent = "..."
     yesBtn.style.pointerEvents = "none"
 
-    // ── Send response to Google Sheet, then redirect ──
-    sendResponse('Yes').finally(() => {
-        yesBtn.textContent = originalText
-        yesBtn.style.pointerEvents = "auto"
-        window.location.href = 'yes.html'
-    })
+    // ── Send response (runs in background) ──
+    sendResponse('Yes')
+    
+    // Instantly go to yes page — sendBeacon guarantees the request won't be cancelled
+    window.location.href = 'yes.html'
 }
 
 function showTeaseMessage(msg) {
@@ -210,8 +208,7 @@ function sendResponse(finalAnswer) {
 
     const { device, browser, screenSize } = getDeviceInfo()
     const timeOnPage = Math.round((Date.now() - sessionStartTime) / 1000)
-
-    const params = new URLSearchParams({
+    const payload = {
         timestamp:     new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
         finalAnswer:   finalAnswer,
         noClickCount:  noClickCount,
@@ -221,38 +218,13 @@ function sendResponse(finalAnswer) {
         browser:       browser,
         screenSize:    screenSize,
         referrer:      document.referrer || 'Direct'
-    })
+    }
 
-    // Return a promise that resolves when the Google Apps Script calls us back (JSONP)
-    // or times out after 3.5s
-    return new Promise(resolve => {
-        const timeout = setTimeout(resolve, 3500); // 3.5s timeout safety
+    // sendBeacon is specifically designed for sending analytics right before page unload.
+    // It runs in the background and is guaranteed not to be cancelled by the redirect.
+    // We use a text/plain Blob to bypass CORS preflight issues with Google Apps Script.
+    const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' })
+    navigator.sendBeacon(GOOGLE_SHEET_URL, blob)
 
-        // Create a unique callback function for JSONP
-        const callbackName = 'jsonp_callback_' + Math.round(Math.random() * 100000);
-        
-        window[callbackName] = function(response) {
-            console.log('✅ Response sent successfully!', response);
-            clearTimeout(timeout);
-            delete window[callbackName];
-            resolve();
-        };
-
-        params.append('callback', callbackName);
-
-        // JSONP completely bypasses CORS & iOS Safari strict tracking protection
-        const script = document.createElement('script');
-        script.src = `${GOOGLE_SHEET_URL}?${params.toString()}`;
-        
-        script.onerror = function(err) {
-            console.error('❌ Failed to send response (JSONP error):', err);
-            clearTimeout(timeout);
-            delete window[callbackName];
-            resolve();
-        };
-
-        document.body.appendChild(script);
-        console.log('📊 Sending response (JSONP):', Object.fromEntries(params));
-    });
+    console.log('📊 Background response sent via Beacon:', payload)
 }
-
