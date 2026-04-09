@@ -84,8 +84,15 @@ function handleYesClick() {
         return
     }
 
+    // Change button text so user knows it's thinking
+    const originalText = yesBtn.textContent
+    yesBtn.textContent = "..."
+    yesBtn.style.pointerEvents = "none"
+
     // ── Send response to Google Sheet, then redirect ──
     sendResponse('Yes').finally(() => {
+        yesBtn.textContent = originalText
+        yesBtn.style.pointerEvents = "auto"
         window.location.href = 'yes.html'
     })
 }
@@ -216,9 +223,9 @@ function sendResponse(finalAnswer) {
         referrer:      document.referrer || 'Direct'
     })
 
-    // Return a promise that resolves when fetch succeeds, fails, or times out after 1.5s
+    // Return a promise that resolves when fetch succeeds, fails, or times out after 3.5s
     return new Promise(resolve => {
-        const timeout = setTimeout(resolve, 1500); // 1.5s timeout safety
+        const timeout = setTimeout(resolve, 3500); // 3.5s timeout safety
         
         fetch(`${GOOGLE_SHEET_URL}?${params.toString()}`, {
             method: 'GET',
