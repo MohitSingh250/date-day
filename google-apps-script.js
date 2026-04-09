@@ -18,7 +18,10 @@
 function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var data = JSON.parse(e.postData.contents);
+    
+    // Parse JSON from postData (works with both text/plain and application/json)
+    var rawData = e.postData.contents;
+    var data = JSON.parse(rawData);
 
     // Append a new row with all tracked data
     sheet.appendRow([
@@ -39,6 +42,10 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
+    // Log the error for debugging (viewable in Apps Script > Executions)
+    Logger.log('Error: ' + error.toString());
+    Logger.log('PostData: ' + JSON.stringify(e.postData));
+    
     // Return error response
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'error', message: error.toString() }))

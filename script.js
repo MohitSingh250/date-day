@@ -87,10 +87,10 @@ function handleYesClick() {
     // ── Send response to Google Sheet before redirecting ──
     sendResponse('Yes')
 
-    // Small delay so the request fires before navigation
+    // Give enough time for the fetch to fire before navigating away
     setTimeout(() => {
         window.location.href = 'yes.html'
-    }, 400)
+    }, 1000)
 }
 
 function showTeaseMessage(msg) {
@@ -218,20 +218,19 @@ function sendResponse(finalAnswer) {
         referrer:      document.referrer || 'Direct'
     }
 
-    // Use sendBeacon for reliability (fires even during page navigation)
-    // Fall back to fetch if sendBeacon is unavailable
-    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' })
+    // Use text/plain to avoid CORS preflight (Google Apps Script can't handle OPTIONS)
+    // fetch with redirect:'follow' so the 302 from Google is followed properly
+    fetch(GOOGLE_SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+    }).then(() => {
+        console.log('✅ Response sent successfully!')
+    }).catch((err) => {
+        console.error('❌ Failed to send response:', err)
+    })
 
-    if (navigator.sendBeacon) {
-        navigator.sendBeacon(GOOGLE_SHEET_URL, blob)
-    } else {
-        fetch(GOOGLE_SHEET_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).catch(() => {})
-    }
-
-    console.log('📊 Response sent:', payload)
+    console.log('📊 Sending response:', payload)
 }
