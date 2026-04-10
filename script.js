@@ -62,6 +62,16 @@ music.play().then(() => {
     }, { once: true })
 })
 
+function ensureMusicPlaying() {
+    if (music.paused || music.muted) {
+        music.muted = false;
+        music.play().catch(() => {});
+        musicPlaying = true;
+        const toggleBtn = document.getElementById('music-toggle');
+        if(toggleBtn) toggleBtn.textContent = '🔊';
+    }
+}
+
 function toggleMusic() {
     if (musicPlaying) {
         music.pause()
@@ -76,6 +86,7 @@ function toggleMusic() {
 }
 
 function handleYesClick() {
+    ensureMusicPlaying();
     if (!runawayEnabled) {
         // Tease her to try No first
         const msg = yesTeasePokes[Math.min(yesTeasedCount, yesTeasePokes.length - 1)]
@@ -105,16 +116,19 @@ function showTeaseMessage(msg) {
 
 function handleNoClick() {
     noClickCount++
+    ensureMusicPlaying();
 
     // Cycle through guilt-trip messages
     const msgIndex = Math.min(noClickCount, noMessages.length - 1)
     noBtn.textContent = noMessages[msgIndex]
 
     // Grow the Yes button bigger each time
+    const isMobile = window.innerWidth <= 480;
+    const multiplier = isMobile ? 1.25 : 1.35;
     const currentSize = parseFloat(window.getComputedStyle(yesBtn).fontSize)
-    yesBtn.style.fontSize = `${currentSize * 1.35}px`
+    yesBtn.style.fontSize = `${currentSize * multiplier}px`
     const padY = Math.min(18 + noClickCount * 5, 60)
-    const padX = Math.min(45 + noClickCount * 10, 120)
+    const padX = Math.min(45 + noClickCount * 10, isMobile ? 60 : 120)
     yesBtn.style.padding = `${padY}px ${padX}px`
 
     // Shrink No button to contrast
