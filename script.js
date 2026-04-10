@@ -102,8 +102,46 @@ function handleYesClick() {
     // ── Send response (runs in background) ──
     sendResponse('Yes')
     
-    // Instantly go to yes page — sendBeacon guarantees the request won't be cancelled
-    window.location.href = 'yes.html'
+    // Instead of navigating away (which restarts music), we seamlessly morph the page!
+    showYesPage()
+}
+
+function showYesPage() {
+    const container = document.querySelector('.container');
+    container.classList.add('yes-container');
+    container.innerHTML = `
+        <h1 class="yes-title">Knew you would say yes! 🎉</h1>
+        <div class="gif-container">
+            <img id="cat-gif" src="https://media.tenor.com/eNHbizSfVb0AAAAj/lovemode-cute.gif" alt="celebrating">
+        </div>
+        <p class="yes-message">You just made me the happiest person! 💕</p>
+    `;
+
+    // Load and trigger confetti seamlessly
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js";
+    script.onload = () => {
+        const colors = ['#ff69b4', '#ff1493', '#ff85a2', '#ffb3c1', '#ff0000', '#ff6347', '#fff', '#ffdf00'];
+        const duration = 6000;
+        const end = Date.now() + duration;
+
+        confetti({
+            particleCount: 150,
+            spread: 100,
+            origin: { x: 0.5, y: 0.3 },
+            colors
+        });
+
+        const interval = setInterval(() => {
+            if (Date.now() > end) {
+                clearInterval(interval);
+                return;
+            }
+            confetti({ particleCount: 40, angle: 60, spread: 55, origin: { x: 0, y: 0.6 }, colors });
+            confetti({ particleCount: 40, angle: 120, spread: 55, origin: { x: 1, y: 0.6 }, colors });
+        }, 300);
+    };
+    document.body.appendChild(script);
 }
 
 function showTeaseMessage(msg) {
